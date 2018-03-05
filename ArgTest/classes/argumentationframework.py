@@ -3,6 +3,8 @@ from ArgTest.classes import *
 import networkx as nx
 import matplotlib.pyplot as plt
 
+from ArgTest.classes import Attack
+
 
 class ArgumentationFramework(object):
 
@@ -29,6 +31,7 @@ class ArgumentationFramework(object):
             self.add_argument(attacker)
         if attacked.name not in self.arguments:
             self.add_argument(attacked)
+        attack = Attack(attacker.name, attacked.name)
         self.attacks.append((attacker.name, attacked.name))
         self.arguments.get(attacker.name).add_attack(attacked.name)
         self.arguments.get(attacked.name).add_attacker(attacker.name)
