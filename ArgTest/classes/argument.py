@@ -1,9 +1,10 @@
 class Argument(object):
 
-    def __init__(self, name):
+    def __init__(self, name, mapping=0):
         self.name = name
         self.attacking = []
         self.attacked_by = []
+        self.mapping = mapping
 
     def add_attack(self, attacked):
         self.attacking.append(attacked)

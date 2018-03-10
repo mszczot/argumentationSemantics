@@ -35,6 +35,5 @@ af.add_attack('a9', 'a7')
 af.add_attack('a3', 'a11')
 
 
-
-print(af)
-af.draw_graph()
+# print(af)
+print(af.get_stable_extension())
