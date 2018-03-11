@@ -21,3 +21,9 @@ print(af.get_dense_matrix())
 print(af.get_stable_extension())
 print(af.is_stable_extension(['a', 'b', 'c']))
 print(af.is_stable_extension(['a', 'c', 'd']))
+
+t = af.get_conflict_free_from_matrix()
+for v in t:
+    print(v)
+
+af.test1()

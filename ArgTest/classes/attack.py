@@ -4,5 +4,5 @@ class Attack(object):
         self.attacker = attacker
         self.attacked = attacked
 
-    def test(self):
-        print(self.attacer)
+    def get_set(self):
+        return set([self.attacker, self.attacked])

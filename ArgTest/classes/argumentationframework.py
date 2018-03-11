@@ -15,10 +15,12 @@ class ArgumentationFramework(object):
         self.name = name
         self.arguments = OrderedDict()
         self.attacks = []
+        self.attacks_mappings = []
         self.defenceSets = [set()]
         self.args_to_defence_sets = {}
         self.matrix = numpy.empty((0, 0))
         self.matrix_permutation = OrderedDict()
+        self.zero_blocks = set()
 
     def __str__(self):
         my_string = 'Argumentation Framework: \n'
@@ -43,6 +45,23 @@ class ArgumentationFramework(object):
         """
         if argument not in self.arguments:
             self.arguments[argument] = Argument(argument, len(self.arguments))
+            # self.__add_element_to_zero_blocks(argument)
+
+    def __add_element_to_zero_blocks(self, arg_name):
+        arg_name = self.arguments[arg_name].mapping
+        zero_blocks = self.zero_blocks.copy()
+        if len(self.zero_blocks) == 0:
+            self.zero_blocks.add(frozenset([arg_name]))
+        else:
+            for v in zero_blocks:
+                new_set = set(v)
+                new_set.add(arg_name)
+                self.zero_blocks.add(frozenset(new_set))
+            self.zero_blocks.add(frozenset([arg_name]))
+
+    def __remove_attack_from_zero_blocks(self, att):
+        to_be_removed = set(frozenset(x) for x in self.zero_blocks if set(att).issubset(x))
+        self.zero_blocks = self.zero_blocks - to_be_removed
 
     def add_attack(self, attacker, attacked):
         """
@@ -61,6 +80,8 @@ class ArgumentationFramework(object):
         self.attacks.append((attacker.name, attacked.name))
         self.arguments.get(attacker.name).add_attack(attacked.name)
         self.arguments.get(attacked.name).add_attacker(attacker.name)
+        # self.__remove_attack_from_zero_blocks(set([attacker.mapping, attacked.mapping]))
+        self.attacks_mappings.append(tuple([attacker.mapping, attacked.mapping]))
 
     def get_dense_matrix(self):
         """
@@ -231,7 +252,8 @@ class ArgumentationFramework(object):
         """
         my_stable_extension = []
         my_range = range(self.matrix.shape[0])
-        s_subblock = self.get_subblocks_with_zeros()
+        # s_subblock = self.get_subblocks_with_zeros()
+        s_subblock = self.get_conflict_free_from_matrix()
         for v in s_subblock:
             columns = set(my_range).symmetric_difference(v)
             if type(self.matrix) is numpy.ndarray:
@@ -271,6 +293,55 @@ class ArgumentationFramework(object):
             self.matrix = self.create_matrix()
         rows = self.matrix.todense()[list(rows), :]
         return rows[:, list(columns)]
+
+    """ Just for testing """
+    def test1(self):
+        self.matrix = self.create_matrix()
+        test = defaultdict(list)
+        ones = numpy.where(self.matrix.todense() == 1)
+        for k, v in zip(ones[0], ones[1]):
+            test[k].append(v)
+        print(test)
+
+    """ Just for testing """
+    def test(self):
+        test = defaultdict(list)
+        test1 = defaultdict(list)
+        zeros = numpy.where(self.matrix.todense() == 0)
+        ones = numpy.where(self.matrix.todense() == 1)
+        for k, v in zip(zeros[0], zeros[1]):
+            test[k].append(v)
+        for k, v in zip(ones[0], ones[1]):
+            test1[k].append(v)
+        my_return = defaultdict(list)
+        def common_entries(*dcts):
+            for i in set(dcts[0]).intersection(*dcts[1:]):
+                yield (i,) + tuple(d[i] for d in dcts)
+        for v in common_entries(test, test1):
+            my_return[v[0]].append(v[1])
+            my_return[v[0]].append(v[2])
+        print(my_return)
+
+    def get_conflict_free_from_matrix(self):
+        """
+        Generator to get all conflict free sets from matrix using the principle of 0's sub blocks
+        Replacing method get_subblocks_with_zeros
+        :return:
+        """
+        for v in range(len(self.arguments)):
+            v += 1
+            combinations = itertools.combinations(range(len(self.arguments)), v)
+            for comb in combinations:
+                if len(comb) > 1:
+                    test = True
+                    for att in self.attacks_mappings:
+                        if set(att).issubset(set(comb)):
+                            test = False
+                            break
+                    if test:
+                        yield [x for x in comb]
+                else:
+                    yield [x for x in comb]
 
     @staticmethod
     def read_tgf(path):
