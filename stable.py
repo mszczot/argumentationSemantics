@@ -13,7 +13,7 @@ filename5 = '1/sembuster_60.tgf'                                        # 60    
 
 
 # full path
-file = path + filename5
+file = path + filename1
 print('Reading file')
 start = time.time()
 af = ArgumentationFramework.read_tgf(file)
@@ -23,10 +23,10 @@ print(len(af.frameworks))
 # af.draw_graph()
 # print('Number of arguments: ' + str(len(af.arguments)))
 # print('Number of attacks: ' + str(len(af.attacks)))
-af.draw_graph()
+# af.draw_graph()
 print('Creating Stable Extension')
 start = time.time()
-gr = af.get_stable_extension_test_1()
+gr = af.get_stable_extension()
 end = time.time()
 print(gr)
 print('Stable Extension created in ' + str(end - start) + ' seconds')

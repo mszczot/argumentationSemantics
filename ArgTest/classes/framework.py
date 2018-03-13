@@ -2,7 +2,7 @@ from scipy import sparse
 
 import numpy
 
-from ArgTest.classes import Argument, Attack
+from ArgTest.classes import Argument, Attack, Matrix
 
 
 class Framework(object):
@@ -10,7 +10,13 @@ class Framework(object):
         self.arguments = {}
         self.attacks = []
         self.counter = counter
-        self.matrix = numpy.ndarray
+        self._matrix = None
+
+    @property
+    def matrix(self):
+        if self._matrix is None:
+            self._matrix = Matrix(self.arguments, self.attacks)
+        return self._matrix
 
     def add_argument(self, argument):
         """
@@ -52,30 +58,10 @@ class Framework(object):
         self.attacks = self.attacks + framework.attacks
         self.attacks.append(tuple([attacker, attacked]))
 
-    def create_matrix(self):
-        """
-        Method used to create the matrix for the argumentation framework
-        :return:
-        """
-        self.matrix = numpy.zeros((len(self.arguments), len(self.arguments)))
-        for attack in self.attacks:
-            self.matrix[self.arguments[attack[0]].mapping, self.arguments[attack[1]].mapping] = 1
-        return sparse.coo_matrix(self.matrix)
-
     def get_argument_from_mapping(self, mapping):
         for v in self.arguments:
             if self.arguments[v].mapping == mapping:
                 return self.arguments[v].name
         return None
 
-    def get_submatrix(self, rows, columns):
-        """
-        Gets submatrix from the main matrix based on the rows and columns provided
-        :param rows: indexes of rows to be included
-        :param columns: indexes of columns to be included
-        :return: sub matrix of original matrix limited to rows and columns provided
-        """
-        if type(self.matrix) is numpy.ndarray:
-            self.matrix = self.create_matrix()
-        rows = self.matrix.todense()[list(rows), :]
-        return rows[:, list(columns)]
+
