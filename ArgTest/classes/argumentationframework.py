@@ -1,18 +1,20 @@
 import ntpath
 from collections import OrderedDict, defaultdict
-from ArgTest.classes import *
+# from ArgTest.classes import Argument, Attack, Framework
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy
 from scipy import sparse
-from ArgTest.classes import Attack
 import itertools
+from ArgTest.classes.framework import Framework
+from ArgTest.classes.database import Database
 
 
 class ArgumentationFramework(object):
 
     def __init__(self, name):
         self.name = name
+        self.frameworks = {}
         self.arguments = OrderedDict()
         self.attacks = []
         self.attacks_mappings = []
@@ -21,6 +23,7 @@ class ArgumentationFramework(object):
         self.matrix = numpy.empty((0, 0))
         self.matrix_permutation = OrderedDict()
         self.zero_blocks = set()
+        self.database = Database()
 
     def __str__(self):
         my_string = 'Argumentation Framework: \n'
@@ -37,31 +40,59 @@ class ArgumentationFramework(object):
             my_string += '|\n'
         return my_string
 
-    def add_argument(self, argument):
+    def add_argument(self, arg):
         """
         Method to add argument to argumentation framework
         :param argument: Name of the argument to be added
         :return:
         """
-        if argument not in self.arguments:
-            self.arguments[argument] = Argument(argument, len(self.arguments))
-            # self.__add_element_to_zero_blocks(argument)
+        # if argument not in self.arguments:
+        #     self.arguments[argument] = Argument(argument, len(self.arguments))
+        #     self.__add_element_to_zero_blocks(argument)
+        if len(self.frameworks) == 0:
+            counter = len(self.frameworks)
+            self.frameworks[counter] = Framework(counter)
+            self.frameworks[counter].add_argument(arg)
+            self.arguments[arg] = counter
+        else:
+            if arg not in self.arguments:
+                counter = len(self.frameworks)
+                self.frameworks[counter] = Framework(counter)
+                self.frameworks[counter].add_argument(arg)
+                self.arguments[arg] = counter
+
+    def get_argument_from_mapping(self, mapping):
+        for v in self.arguments:
+            if self.arguments[v].mapping == mapping:
+                return self.arguments[v].name
+        return None
 
     def __add_element_to_zero_blocks(self, arg_name):
         arg_name = self.arguments[arg_name].mapping
         zero_blocks = self.zero_blocks.copy()
         if len(self.zero_blocks) == 0:
-            self.zero_blocks.add(frozenset([arg_name]))
+            # self.zero_blocks.add(frozenset([arg_name]))
+            # self.database.add_conflict_free_set(arg_name)
+            return
         else:
             for v in zero_blocks:
                 new_set = set(v)
                 new_set.add(arg_name)
-                self.zero_blocks.add(frozenset(new_set))
-            self.zero_blocks.add(frozenset([arg_name]))
+                # self.zero_blocks.add(frozenset(new_set))
+                # self.database.add_conflict_free_set(new_set)
+            # self.zero_blocks.add(frozenset([arg_name]))
+            # self.database.add_conflict_free_set(arg_name)
 
     def __remove_attack_from_zero_blocks(self, att):
         to_be_removed = set(frozenset(x) for x in self.zero_blocks if set(att).issubset(x))
         self.zero_blocks = self.zero_blocks - to_be_removed
+
+    def get_keys(self, value):
+        my_return = []
+        for k, v in self.arguments.items():
+            if v == value:
+                my_return.append(k)
+        return my_return
 
     def add_attack(self, attacker, attacked):
         """
@@ -70,18 +101,31 @@ class ArgumentationFramework(object):
         :param attacked: argument attacked by 'attacker'
         :return:
         """
-        attacker = self.arguments.get(attacker)
-        attacked = self.arguments.get(attacked)
-        if attacker.name not in self.arguments:
+        if attacker not in self.arguments:
             self.add_argument(attacker)
-        if attacked.name not in self.arguments:
+        if attacked not in self.arguments:
             self.add_argument(attacked)
-        attack = Attack(attacker.name, attacked.name)
-        self.attacks.append((attacker.name, attacked.name))
-        self.arguments.get(attacker.name).add_attack(attacked.name)
-        self.arguments.get(attacked.name).add_attacker(attacker.name)
-        # self.__remove_attack_from_zero_blocks(set([attacker.mapping, attacked.mapping]))
-        self.attacks_mappings.append(tuple([attacker.mapping, attacked.mapping]))
+        attacked_counter = self.frameworks[self.arguments[attacked]].counter
+        attacker_counter = self.frameworks[self.arguments[attacker]].counter
+        if attacker_counter != attacked_counter:
+            self.frameworks[self.arguments[attacker]].merge_framework_through_attack(self.frameworks[self.arguments[attacked]], attacker, attacked)
+            del self.frameworks[attacked_counter]
+            self.arguments[attacked] = attacker_counter
+            for k in self.get_keys(attacked_counter):
+                self.arguments[k] = attacker_counter
+        else:
+            self.frameworks[self.arguments[attacker]].add_attack(attacker, attacked)
+        self.attacks.append((attacker, attacked))
+        # if attacker.name not in self.arguments:
+        #     self.add_argument(attacker)
+        # if attacked.name not in self.arguments:
+        #     self.add_argument(attacked)
+        # attack = Attack(attacker.name, attacked.name)
+        # self.attacks.append((attacker.name, attacked.name))
+        # self.arguments.get(attacker.name).add_attack(attacked.name)
+        # self.arguments.get(attacked.name).add_attacker(attacker.name)
+        # # self.__remove_attack_from_zero_blocks(set([attacker.mapping, attacked.mapping]))
+        # self.attacks_mappings.append(tuple([attacker.mapping, attacked.mapping]))
 
     def get_dense_matrix(self):
         """
@@ -265,21 +309,61 @@ class ArgumentationFramework(object):
                 my_stable_extension.append(v)
         return my_stable_extension
 
-    def is_stable_extension(self, arguments):
+    def get_stable_extension_test_1(self):
+        """
+        Method to test if can get stable extensions only from the list of rows/columns in matrix where value is 0
+        :return:
+        """
+        # TODO Should remove all elements which are not attacked nor attacking any other element first
+        my_return = set()
+        for f in self.frameworks:
+            framework = self.frameworks[f]
+            framework.matrix = framework.create_matrix()
+            zeros = numpy.where(framework.matrix.todense() == 0)
+            sets_to_check = defaultdict(list)
+            for k, v in zip(zeros[0], zeros[1]):
+                sets_to_check[k].append(framework.get_argument_from_mapping(v))
+            for v in sets_to_check:
+                if self.is_stable_extension(framework, sets_to_check[v]):
+                    if set(sets_to_check[v]) not in set(my_return):
+                        # my_return[framework.counter].append(sets_to_check[v])
+                        for element in sets_to_check[v]:
+                            my_return.add(element)
+        return my_return
+
+    def is_stable_extension(self, framework, args):
         """
         Verifies if the provided argument(s) are stable extension using matrix
-        :param arguments: list of arguments to be checked
+        :param args: list of arguments to be checked
         :return: True if the provided arguments are a stable extension, otherwise False
         """
-        my_labels = [self.arguments[x].mapping for x in arguments]
-        my_submatrix = self.__get_submatrix(my_labels, my_labels)
+        my_labels = [framework.arguments[x].mapping for x in args]
+        # get the arguments that are not attacking nor are attacked - they will be part of the stable extension,
+        # but won't be checked by vertices
+        if type(framework.matrix) is numpy.ndarray:
+            framework.matrix = framework.create_matrix()
+        x = numpy.where(framework.matrix.todense() == 1)
+        y = defaultdict(list)
+        for k, v in zip(x[0], x[1]):
+            y[k].append(v)
+        # TODO this throws error when there are no elements which are not attacking nor are attacked
+        not_attacked_or_attacking = None #[x for x in set(my_labels).symmetric_difference(y.keys()) if x not in y.values()]
+        my_submatrix = framework.get_submatrix(my_labels, my_labels)
         if len(numpy.where(my_submatrix == 1)[0]) > 0:
             return False
-        my_column_vertices = self.__get_submatrix(my_labels, [x for x in
-                                                              set(range(len(self.arguments))).symmetric_difference(
+        a = [x for x in set(range(len(framework.arguments))).symmetric_difference(my_labels)]
+        # my_column_vertices = self.__get_submatrix(set(my_labels) - set(not_attacked_or_attacking), [x for x in
+        #                                                       set(range(len(self.arguments))).symmetric_difference(
+        #                                                           my_labels)])
+        my_column_vertices = framework.get_submatrix(set(my_labels), [x for x in
+                                                              set(range(len(framework.arguments))).symmetric_difference(
                                                                   my_labels)])
-        if len(numpy.where(my_column_vertices == 0)[0]) > 0:
-            return False
+        if not_attacked_or_attacking is None:
+            if len(numpy.where(my_column_vertices == 0)[0]) > 0:
+                return False
+        else:
+            if len(set(numpy.where(my_column_vertices == 1)[0])) == my_column_vertices.shape[0]:
+                return True
         return True
 
     def __get_submatrix(self, rows, columns):

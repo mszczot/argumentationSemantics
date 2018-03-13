@@ -14,7 +14,7 @@ filename8 = 'A/5/BA_80_80_2.tgf' # 81 | 145
 filename9 = 'B/1/admbuster_2000.tgf' # 2000 | 2998
 filename10 = 'A/1/afinput_exp_acyclic_indvary1_step5_batch_yyy04.tgf' # 26 | 90
 
-f = filename9
+f = filename5
 
 print('Reading file ' + f)
 start = time.time()
@@ -25,9 +25,8 @@ print('Argumentation framework has ' + str(len(af.arguments)) + ' arguments')
 print('Argumentation framework has ' + str(len(af.attacks)) + ' attacks')
 print(af)
 
-# start = time.time()
-# print(af.get_stable_extension())
-# end = time.time()
+start = time.time()
+print(af.get_stable_extension_test_1())
+end = time.time()
 print('stable extension done in ' + str(end - start) + ' seconds')
 
-af.test1()
