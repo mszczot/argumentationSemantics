@@ -1,7 +1,3 @@
-from scipy import sparse
-
-import numpy
-
 from ArgTest.classes import Argument, Attack, Matrix
 
 
@@ -11,6 +7,8 @@ class Framework(object):
         self.attacks = []
         self.counter = counter
         self._matrix = None
+
+    # TODO Resolve issue with merging frameworks
 
     @property
     def matrix(self):
@@ -46,15 +44,31 @@ class Framework(object):
         self.arguments.get(attacked).add_attacker(attacker)
 
     def merge_framework(self, framework):
-        self.arguments = {**self.arguments, **framework.arguments}
+        """
+        Method to merge two frameworks
+        :param framework: framework to be merged
+        :return:
+        """
+        self.arguments = {**framework.arguments}
         self.attacks = self.attacks + framework.attacks
+        self.__remap_arguments()
 
-    def merge_framework_through_attack(self, framework, attacker, attacked):
-        self.arguments = {**self.arguments, **framework.arguments}
+    def __remap_arguments(self):
         counter = 0
         for a in self.arguments.values():
             a.mapping = counter
             counter += 1
+
+    def merge_framework_through_attack(self, framework, attacker, attacked):
+        """
+        Method to merge two frameworks through attack
+        :param framework: framework to be merged
+        :param attacker: attacker from the attack
+        :param attacked: attacked argument from the attack
+        :return:
+        """
+        self.arguments = {**self.arguments, **framework.arguments}
+        self.__remap_arguments()
         self.attacks = self.attacks + framework.attacks
         self.attacks.append(tuple([attacker, attacked]))
 

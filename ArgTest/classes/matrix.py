@@ -21,15 +21,15 @@ class Matrix(object):
     def to_dense(self):
         return self._matrix.todense()
 
-    def __create_matrix(self, arguments, attacks):
+    @staticmethod
+    def __create_matrix(arguments, attacks):
         """
         Method used to create the matrix for the argumentation framework
         :return:
         """
-        shape = (len(arguments), len(arguments))
         return sparse.coo_matrix(([1] * len(attacks), ([arguments[v[0]].mapping for v in attacks],
-                                                         [arguments[v[1]].mapping for v in attacks])),
-                                 shape=shape)
+                                                       [arguments[v[1]].mapping for v in attacks])),
+                                 shape=(len(arguments), len(arguments)))
 
     def get_sub_matrix(self, rows, columns):
         """
@@ -41,7 +41,7 @@ class Matrix(object):
         rows = self.to_dense[list(rows), :]
         return rows[:, list(columns)]
 
-    def get_subblocks_with_zeros(self):
+    def get_sub_blocks_with_zeros(self):
         """
         Method to generate all sub blocks from original matrix where all values are 0's. Not efficient
         :return: list of sets of indexes for matrix where values in corresponding rows/columns are 0's
@@ -53,7 +53,7 @@ class Matrix(object):
         for k, v in zip(zeros[0], zeros[1]):
             test[k].add(v)
         for v in range(0, my_matrix.shape[0]):
-            possible_combinations = possible_combinations(range(my_matrix.shape[0]), v + 1)
+            possible_combinations = combinations(range(my_matrix.shape[0]), v + 1)
             for comb in possible_combinations:
                 my_sets = [test[x] for x in comb]
                 intersection = set(comb).intersection(*my_sets)
