@@ -27,9 +27,13 @@ class Matrix(object):
         Method used to create the matrix for the argumentation framework
         :return:
         """
-        return sparse.coo_matrix(([1] * len(attacks), ([arguments[v[0]].mapping for v in attacks],
-                                                       [arguments[v[1]].mapping for v in attacks])),
-                                 shape=(len(arguments), len(arguments)))
+        matrix = numpy.zeros((len(arguments), len(arguments)))
+        for v in attacks:
+            matrix[arguments[v[0]].mapping, arguments[v[1]].mapping] = 1
+        # return sparse.coo_matrix(([1] * len(attacks), ([arguments[v[0]].mapping for v in attacks],
+        #                                                [arguments[v[1]].mapping for v in attacks])),
+        #                          shape=(len(arguments), len(arguments)))
+        return sparse.coo_matrix(matrix)
 
     def get_sub_matrix(self, rows, columns):
         """

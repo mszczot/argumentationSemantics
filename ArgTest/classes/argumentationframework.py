@@ -182,7 +182,7 @@ class ArgumentationFramework(object):
                         # my_return[framework.counter].append(sets_to_check[v])
                         for element in sets_to_check[v]:
                             my_return.add(element)
-        return my_return
+        return [my_return]
 
     @staticmethod
     def __is_stable_extension(framework, args):
@@ -195,6 +195,7 @@ class ArgumentationFramework(object):
         my_labels = [framework.arguments[x].mapping for x in args]
         # get the arguments that are not attacking nor are attacked - they will be part of the stable extension,
         # but won't be checked by vertices
+        print(framework.matrix.to_dense)
         if type(framework.matrix) is numpy.ndarray:
             framework.matrix = framework.create_matrix()
         x = numpy.where(framework.matrix.to_dense == 1)

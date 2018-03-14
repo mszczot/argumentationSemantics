@@ -34,14 +34,14 @@ class Framework(object):
         """
         attacker = self.arguments.get(attacker)
         attacked = self.arguments.get(attacked)
-        if attacker not in self.arguments:
+        if attacker.name not in self.arguments:
             self.add_argument(attacker)
-        if attacked not in self.arguments:
+        if attacked.name not in self.arguments:
             self.add_argument(attacked)
-        attack = Attack(attacker, attacked)
-        self.attacks.append((attacker, attacked))
-        self.arguments.get(attacker).add_attack(attacked)
-        self.arguments.get(attacked).add_attacker(attacker)
+        attack = Attack(attacker.name, attacked.name)
+        self.attacks.append((attacker.name, attacked.name))
+        self.arguments.get(attacker.name).add_attack(attacked.name)
+        self.arguments.get(attacked.name).add_attacker(attacker.name)
 
     def merge_framework(self, framework):
         """
