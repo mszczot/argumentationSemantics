@@ -8,8 +8,6 @@ class Framework(object):
         self.counter = counter
         self._matrix = None
 
-    # TODO Resolve issue with merging frameworks
-
     @property
     def matrix(self):
         if self._matrix is None:

@@ -173,15 +173,17 @@ class ArgumentationFramework(object):
         for f in self.frameworks:
             framework = self.frameworks[f]
             zeros = numpy.where(framework.matrix.to_dense == 0)
-            sets_to_check = defaultdict(list)
-            for k, v in zip(zeros[0], zeros[1]):
-                sets_to_check[k].append(framework.get_argument_from_mapping(v))
+            sets_to_check = framework.matrix.get_sub_blocks_with_zeros()
+            """The approach below is incorrect as it takes only combinations of elements for each row where value is 0 """
+            # sets_to_check = defaultdict(list)
+            # for k, v in zip(zeros[0], zeros[1]):
+            #     sets_to_check[k].append(framework.get_argument_from_mapping(v))
             for v in sets_to_check:
-                if self.__is_stable_extension(framework, sets_to_check[v]):
-                    if set(sets_to_check[v]) not in set(my_return):
+                if self.__is_stable_extension(framework, v):
+                    if set(v) not in set(my_return):
                         # my_return[framework.counter].append(sets_to_check[v])
-                        for element in sets_to_check[v]:
-                            my_return.add(element)
+                        for element in v:
+                            my_return.add(framework.get_argument_from_mapping(element))
         return [my_return]
 
     @staticmethod
@@ -192,10 +194,11 @@ class ArgumentationFramework(object):
         :param args: list of arguments to be checked
         :return: True if the provided arguments are a stable extension, otherwise False
         """
-        my_labels = [framework.arguments[x].mapping for x in args]
+        # This is commented out as using zero sub blocks from matrix
+        # my_labels = [framework.arguments[x].mapping for x in args]
+        my_labels = args
         # get the arguments that are not attacking nor are attacked - they will be part of the stable extension,
         # but won't be checked by vertices
-        print(framework.matrix.to_dense)
         if type(framework.matrix) is numpy.ndarray:
             framework.matrix = framework.create_matrix()
         x = numpy.where(framework.matrix.to_dense == 1)
@@ -215,8 +218,12 @@ class ArgumentationFramework(object):
                                                                           framework.arguments))).symmetric_difference(
                                                                           my_labels)])
         if not_attacked_or_attacking is None:
-            if len(numpy.where(my_column_vertices == 0)[0]) > 0:
-                return False
+            for row in my_column_vertices.sum(axis=0).tolist():
+                for v in row:
+                    if v == 0:
+                        return False
+            # if len(numpy.where(my_column_vertices == 0)[0]) > 0:
+            #     return False
         else:
             if len(set(numpy.where(my_column_vertices == 1)[0])) == my_column_vertices.shape[0]:
                 return True
