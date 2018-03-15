@@ -1,10 +1,11 @@
 import ntpath
 from collections import OrderedDict, defaultdict
+from scipy import sparse
+
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy
-from ArgTest.classes import Matrix, Argument
-from ArgTest.classes.framework import Framework
+from ArgTest.classes import Matrix, Argument, Framework
 
 
 class ArgumentationFramework(object):
@@ -164,20 +165,18 @@ class ArgumentationFramework(object):
         :return:
         """
         # TODO Should remove all elements which are not attacked nor attacking any other element first
-        my_return = set()
+        my_return = []
         zeros = numpy.where(self.matrix.to_dense == 0)
-        sets_to_check = self.matrix.get_sub_blocks_with_zeros()
-        """The approach below is incorrect as it takes only combinations of elements for each row where value is 0 """
-        # sets_to_check = defaultdict(list)
-        # for k, v in zip(zeros[0], zeros[1]):
-        #     sets_to_check[k].append(framework.get_argument_from_mapping(v))
+        sets_to_check = defaultdict(list)
+        for k, v in zip(zeros[0], zeros[1]):
+            sets_to_check[k].append(self.get_argument_from_mapping(v))
         for v in sets_to_check:
-            if self.__is_stable_extension(v):
-                if set(v) not in set(my_return):
+            to_test = self.get_conflict_free_from_set(sets_to_check[v])
+            if self.__is_stable_extension(to_test):
+                if set(to_test) not in set(my_return):
                     # my_return[framework.counter].append(sets_to_check[v])
-                    for element in v:
-                        my_return.add(self.get_argument_from_mapping(element))
-        return [my_return]
+                    my_return.append(frozenset(to_test))
+        return my_return
 
     def __is_stable_extension(self, args):
         """
@@ -187,8 +186,7 @@ class ArgumentationFramework(object):
         :return: True if the provided arguments are a stable extension, otherwise False
         """
         # This is commented out as using zero sub blocks from matrix
-        # my_labels = [framework.arguments[x].mapping for x in args]
-        my_labels = args
+        my_labels = [self.arguments[x].mapping for x in args]
         x = numpy.where(self.matrix.to_dense == 1)
         y = defaultdict(list)
         for k, v in zip(x[0], x[1]):
@@ -216,6 +214,12 @@ class ArgumentationFramework(object):
             if len(set(numpy.where(my_column_vertices == 1)[0])) == my_column_vertices.shape[0]:
                 return True
         return True
+
+    def get_conflict_free_from_set(self, arg_set):
+        my_labels = [self.arguments[x].mapping for x in arg_set]
+        for arg in arg_set:
+            arg_set = set(arg_set) - set(self.arguments[arg].attacking)
+        return list(arg_set)
 
     @staticmethod
     def read_tgf(path):

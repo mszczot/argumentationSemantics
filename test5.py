@@ -21,7 +21,7 @@ af.add_attack('a', 'b')
 af.add_attack('b', 'c')
 af.add_attack('c', 'd')
 
-af.draw_graph()
+# af.draw_graph()
 print(af.get_stable_extension())
 # print('Stable 1')
 # print(af.get_stable_extension())

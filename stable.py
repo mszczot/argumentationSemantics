@@ -13,7 +13,7 @@ filename5 = '1/sembuster_60.tgf'                                        # 60    
 
 
 # full path
-file = path + filename3
+file = path + filename5
 print('Reading file')
 start = time.time()
 af = ArgumentationFramework.read_tgf(file)
